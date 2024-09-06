@@ -1,45 +1,41 @@
 const mongoose = require("mongoose");
 
-const Product = mongoose.Schema(
+// Product Schema
+const ProductSchema = new mongoose.Schema(
   {
-    productName: {
+    title: {
       type: String,
-      require: true,
+      required: true,
       default: "",
     },
-    productCategory: {
+    category: {
       type: String,
-      require: true,
+      required: true,
       default: "",
     },
-    productCode: {
+    code: {
       type: String,
-      require: true,
+      required: true,
       default: "",
     },
     purchasePrice: {
       type: Number,
-      require: true,
-      default: "",
+      required: true,
     },
     sellingPrice: {
       type: Number,
-      require: true,
-      default: "",
+      required: true,
     },
     note: {
       type: String,
-      require: false,
       default: "",
     },
-    quantity: {
+    stock: {
       type: Number,
-      require: true,
-      default: "",
+      required: true,
     },
-    productDescription: {
+    description: {
       type: String,
-      require: false,
       default: "",
     },
   },
@@ -48,4 +44,57 @@ const Product = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Product", Product);
+// Sale List Schema
+const SaleListSchema = new mongoose.Schema(
+  {
+    id: {
+      type: String,
+      required: true,
+    },
+    code: {
+      type: String,
+      required: true,
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    sellingPrice: {
+      type: Number,
+      required: true,
+    },
+    discount: {
+      type: Number,
+      default: 0,
+    },
+    stock: {
+      type: Number,
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 1,
+    },
+    note: {
+      type: String,
+      default: "",
+    },
+    paymentType: {
+      type: String,
+      enum: ["digital-payment", "due-amount", "cash-payment"],
+      required: true,
+    },
+  },
+  { timestamps: true }
+);
+
+// Exporting both models
+const Product = mongoose.model("Product", ProductSchema);
+const SaleListModel = mongoose.model("SaleList", SaleListSchema);
+
+module.exports = { Product, SaleListModel };

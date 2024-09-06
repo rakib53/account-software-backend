@@ -1,6 +1,6 @@
-const Product = require("../model/product.model");
+const { Product, SaleListModel } = require("../model/product.model");
 
-// Creating a new User.
+// Creating a new product.
 const createProduct = async (req, res, next) => {
   try {
     // Creating the product object for database
@@ -21,11 +21,56 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+// Add a new sale
+const addNewSale = async (req, res) => {
+  const { productCode } = req.body;
+
+  try {
+    if (!productCode) {
+      return res.status(400).json({ message: "Product code is required" });
+    }
+
+    const result = await Product.findOne({ code: productCode });
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Sale added successfully", product: result });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// get all the sale list
+const getAllSaleLists = async (req, res) => {
+  try {
+    const result = await SaleListModel.find();
+    if (result) {
+      res.status(200).json({ saleLists: result });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const addNewSaleList = async (req, res) => {
+  try {
+    const result = await SaleListModel.insertMany(req.body?.saleList);
+    if (result) {
+      res
+        .status(200)
+        .json({ message: "Sale list added successfully", saleLists: result });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+// get all products
 const getProductList = async (req, res, next) => {
   const { limit = 12, page = 1 } = req?.query;
   try {
     const totalProducts = await Product.countDocuments();
-    console.log(totalProducts);
     // finding all the product list
     const productList = await Product.find({}).limit(limit);
     if (productList) {
@@ -42,6 +87,7 @@ const getProductList = async (req, res, next) => {
   }
 };
 
+// Deleting a product
 const deleteProduct = async (req, res, next) => {
   const { productId } = req.params;
   try {
@@ -63,4 +109,11 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
-module.exports = { createProduct, getProductList, deleteProduct };
+module.exports = {
+  createProduct,
+  addNewSale,
+  getProductList,
+  deleteProduct,
+  addNewSaleList,
+  getAllSaleLists,
+};
