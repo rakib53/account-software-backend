@@ -18,7 +18,7 @@ const ProductSchema = new mongoose.Schema(
       required: true,
       default: "",
     },
-    purchasePrice: {
+    buyingPrice: {
       type: Number,
       required: true,
     },
@@ -47,16 +47,16 @@ const ProductSchema = new mongoose.Schema(
 // Sale List Schema
 const SaleListSchema = new mongoose.Schema(
   {
-    id: {
-      type: String,
-      required: true,
-    },
     code: {
       type: String,
       required: true,
     },
     title: {
       type: String,
+      required: true,
+    },
+    buyingPrice: {
+      type: Number,
       required: true,
     },
     sellingPrice: {
@@ -66,10 +66,6 @@ const SaleListSchema = new mongoose.Schema(
     discount: {
       type: Number,
       default: 0,
-    },
-    stock: {
-      type: Number,
-      required: true,
     },
     amount: {
       type: Number,

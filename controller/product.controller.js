@@ -1,68 +1,128 @@
+const { Types } = require("mongoose");
 const { Product, SaleListModel } = require("../model/product.model");
 
 // Creating a new product.
 const createProduct = async (req, res, next) => {
   try {
+    // Find the product with the product code
+    const isExistingProductWithCode = await Product.findOne({
+      code: req?.body?.code,
+    });
+    if (isExistingProductWithCode) {
+      res.status(400).json({ message: "Dulicate product code detected." });
+      return;
+    }
     // Creating the product object for database
-    const newProduct = await new Product(req?.body);
+    const newProduct = new Product(req?.body);
     // Storing the user information to database and gives front end response
     const createdProduct = await newProduct.save();
 
     if (createdProduct?._id) {
       res.status(201).json({
         product: createdProduct,
-        message: "Product added successfully",
+        message: "Product added successfully.",
       });
     } else {
-      res.status(500).json({ message: "Failed to add product" });
+      res.status(500).json({ message: "Failed to add product." });
     }
   } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
 
-// Add a new sale
-const addNewSale = async (req, res) => {
+// Response product info to the client through product code
+const addNewSale = async (req, res, next) => {
   const { productCode } = req.body;
 
   try {
     if (!productCode) {
-      return res.status(400).json({ message: "Product code is required" });
+      return res.status(400).json({ message: "Product code is required." });
     }
 
     const result = await Product.findOne({ code: productCode });
     if (result) {
       res
         .status(200)
-        .json({ message: "Sale added successfully", product: result });
+        .json({ message: "Sale added successfully.", product: result });
+    } else {
+      res
+        .status(404)
+        .json({ status: 404, message: "Invalid product code.", product: [] });
     }
   } catch (error) {
-    console.log(error);
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
   }
 };
 
-// get all the sale list
-const getAllSaleLists = async (req, res) => {
+// Getting all the sales list
+const getAllSaleLists = async (req, res, next) => {
   try {
     const result = await SaleListModel.find();
     if (result) {
       res.status(200).json({ saleLists: result });
     }
   } catch (error) {
-    console.log(error);
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
   }
 };
 
-const addNewSaleList = async (req, res) => {
+// Adding new sale list
+const addNewSaleList = async (req, res, next) => {
   try {
+    // Insert the sales list into the database
     const result = await SaleListModel.insertMany(req.body?.saleList);
+
+    // Prepare bulk update operations for updating stock
+    const bulkOperations = req.body?.saleList?.map((sale) => ({
+      updateOne: {
+        filter: { _id: sale?.id }, // Find the product by ID
+        update: { $set: { stock: sale?.stock } }, // Update the stock
+      },
+    }));
+
+    // Execute bulk write to update all stocks in one operation
+    if (bulkOperations.length > 0) {
+      await Product.bulkWrite(bulkOperations);
+    }
+
+    // Respond with success message
     if (result) {
-      res
-        .status(200)
-        .json({ message: "Sale list added successfully", saleLists: result });
+      res.status(200).json({
+        message: "Sale list added and stocks updated successfully.",
+        saleLists: result,
+      });
     }
   } catch (error) {
-    console.log(error);
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
+  }
+};
+
+// Deleting a sale list
+const deleteSale = async (req, res, next) => {
+  const { saleId } = req.params;
+  try {
+    if (typeof saleId !== "string" || !Types.ObjectId.isValid(saleId)) {
+      return res.status(400).json({ message: "Invalid sale Id." });
+    }
+    const deletedSale = await SaleListModel.deleteOne({ _id: saleId });
+    if (deletedSale) {
+      res.status(200).json({
+        message: "Sale deleted successfully.",
+        deletedSale: deletedSale,
+      });
+    } else {
+      res.status(300).json({
+        message: "Error occured while deleing sale.",
+        deletedSale: {},
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
   }
 };
 
@@ -80,9 +140,10 @@ const getProductList = async (req, res, next) => {
         currentPage: page,
       });
     } else {
-      res.status(500).json({ message: "Failed to get products" });
+      res.status(500).json({ message: "Failed to get products." });
     }
   } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -106,6 +167,7 @@ const deleteProduct = async (req, res, next) => {
       message: "Internal server errors!",
       error: error,
     });
+    next(error);
   }
 };
 
@@ -116,4 +178,5 @@ module.exports = {
   deleteProduct,
   addNewSaleList,
   getAllSaleLists,
+  deleteSale,
 };
