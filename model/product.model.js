@@ -29,14 +29,17 @@ const ProductSchema = new mongoose.Schema(
     note: {
       type: String,
       default: "",
+      required: false,
     },
     stock: {
       type: Number,
       required: true,
+      default: 0,
     },
     description: {
       type: String,
       default: "",
+      require: false,
     },
   },
   {
@@ -47,6 +50,10 @@ const ProductSchema = new mongoose.Schema(
 // Sale List Schema
 const SaleListSchema = new mongoose.Schema(
   {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+    },
     code: {
       type: String,
       required: true,

@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 // signing json web token
 const signJsonWebToken = (user, tokenValidationTime) => {
   const signingInToken = jwt.sign(user, process.env.JWT_SECRET, {
-    expiresIn: tokenValidationTime ? tokenValidationTime : "1h",
+    expiresIn: tokenValidationTime ? tokenValidationTime : "7d",
   });
 
   return signingInToken;

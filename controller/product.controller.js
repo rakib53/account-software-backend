@@ -31,6 +31,53 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+// get product info
+const getProductInfo = async (req, res, next) => {
+  const { productId } = req?.params;
+  try {
+    const product = await Product.findById(productId);
+    if (product) {
+      res.status(200).json({ product });
+    } else {
+      res.status(404).json({ message: "No Product Found.", product: {} });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
+  }
+};
+
+// Update a product
+const updateProduct = async (req, res, next) => {
+  const { productId } = req?.params;
+  try {
+    const product = await Product.findById(productId);
+    if (!product) {
+      res.status(404).json({ message: "No product found." });
+      return;
+    }
+    // updating product info
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      req?.body,
+      { upsert: true, new: true }
+    );
+    if (updatedProduct) {
+      res.status(200).json({
+        message: "Updated product successfully",
+        updatedProduct,
+      });
+    } else {
+      res.status(400).json({
+        message: "Error occured while updating product info",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
+  }
+};
+
 // Response product info to the client through product code
 const addNewSale = async (req, res, next) => {
   const { productCode } = req.body;
@@ -56,12 +103,107 @@ const addNewSale = async (req, res, next) => {
   }
 };
 
+// // Getting all the sales list
+// const getAllSaleLists = async (req, res, next) => {
+//   try {
+//     // Now, populate the product field in the inserted sale list
+//     const result = await SaleListModel.find().populate({
+//       path: "product",
+//       select: "title buyingPrice sellingPrice",
+//     });
+//     if (result) {
+//       res.status(200).json({ saleLists: result });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ message: "Internal server error.", error: error });
+//     next(error);
+//   }
+// };
+
 // Getting all the sales list
 const getAllSaleLists = async (req, res, next) => {
+  const { limit = 10, page = 1 } = req.query;
+
+  // Parse limit and page to ensure they are numbers (since query parameters are strings by default)
+  const parsedLimit = parseInt(limit, 10);
+  const parsedPage = parseInt(page, 10);
+
   try {
-    const result = await SaleListModel.find();
+    // Get total sales count for pagination
+    const totalSales = await SaleListModel.countDocuments();
+
+    // Calculate the number of documents to skip for pagination
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    // Find the sales list with pagination and populate the product details
+    const result = await SaleListModel.find()
+      .populate({
+        path: "product",
+        select: "title buyingPrice sellingPrice",
+      })
+      .skip(skip)
+      .limit(parsedLimit);
+
     if (result) {
-      res.status(200).json({ saleLists: result });
+      res.status(200).json({
+        saleLists: result,
+        totalSales,
+        currentPage: parsedPage,
+        totalPages: Math.ceil(totalSales / parsedLimit),
+      });
+    } else {
+      res.status(404).json({ message: "No sales lists found." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
+  }
+};
+
+// Getting a sale info
+const getSaleInfo = async (req, res, next) => {
+  const { saleId } = req?.params;
+  try {
+    const saleInfo = await SaleListModel.findById(saleId).populate({
+      path: "product",
+      select: "title buyingPrice sellingPrice stock",
+    });
+    if (saleInfo) {
+      res.status(200).json({ saleInfo });
+    } else {
+      res.status(500).json({
+        message: "Error occured while getting sale info.",
+        error: error,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error.", error: error });
+    next(error);
+  }
+};
+
+// Updating a sale
+const updateSale = async (req, res, next) => {
+  const { saleId } = req.params;
+  try {
+    const isSaleExitst = await SaleListModel.findById(saleId);
+    if (isSaleExitst) {
+      await Product.findByIdAndUpdate(
+        req?.body?.product,
+        { stock: req?.body?.stock },
+        { new: true }
+      );
+      const isSaleUpdated = await SaleListModel.findByIdAndUpdate(
+        saleId,
+        req?.body,
+        { new: true }
+      );
+      if (isSaleUpdated) {
+        res.status(200).json({
+          message: "Sale updated successfully.",
+          saleInfo: isSaleUpdated,
+        });
+      }
     }
   } catch (error) {
     res.status(500).json({ message: "Internal server error.", error: error });
@@ -72,8 +214,21 @@ const getAllSaleLists = async (req, res, next) => {
 // Adding new sale list
 const addNewSaleList = async (req, res, next) => {
   try {
+    // Ensure the sale list contains the product reference
+    const saleListWithProduct = req.body?.saleList?.map((sale) => ({
+      product: sale?.id,
+      code: sale?.code,
+      title: sale?.title,
+      buyingPrice: sale?.buyingPrice,
+      sellingPrice: sale?.sellingPrice,
+      discount: sale?.discount,
+      amount: sale?.amount,
+      quantity: sale?.quantity,
+      note: sale?.note,
+      paymentType: sale?.paymentType,
+    }));
     // Insert the sales list into the database
-    const result = await SaleListModel.insertMany(req.body?.saleList);
+    const result = await SaleListModel.insertMany(saleListWithProduct);
 
     // Prepare bulk update operations for updating stock
     const bulkOperations = req.body?.saleList?.map((sale) => ({
@@ -88,11 +243,20 @@ const addNewSaleList = async (req, res, next) => {
       await Product.bulkWrite(bulkOperations);
     }
 
+    // Now, populate the product field in the inserted sale list
+    const populatedSaleList = await SaleListModel.find({
+      _id: { $in: result.map((sale) => sale._id) },
+    }).populate({
+      path: "product",
+      select: "title buyingPrice sellingPrice",
+    });
+
     // Respond with success message
-    if (result) {
+    if (populatedSaleList) {
+      // Respond with success message and populated sale list
       res.status(200).json({
-        message: "Sale list added and stocks updated successfully.",
-        saleLists: result,
+        message: "Sale list added.",
+        saleLists: populatedSaleList,
       });
     }
   } catch (error) {
@@ -128,19 +292,32 @@ const deleteSale = async (req, res, next) => {
 
 // get all products
 const getProductList = async (req, res, next) => {
-  const { limit = 12, page = 1 } = req?.query;
+  const { limit = 12, page = 1 } = req.query;
+
+  // Parse limit and page to ensure they are numbers (in case they're passed as strings)
+  const parsedLimit = parseInt(limit, 10);
+  const parsedPage = parseInt(page, 10);
+
   try {
+    // Get the total number of products
     const totalProducts = await Product.countDocuments();
-    // finding all the product list
-    const productList = await Product.find({}).limit(limit);
+
+    // Calculate the number of documents to skip for pagination
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    // Find the products with limit and skip for pagination
+    const productList = await Product.find({}).skip(skip).limit(parsedLimit);
+
+    // Check if the product list exists and send response
     if (productList) {
-      res.status(201).json({
+      res.status(200).json({
         products: productList,
         totalProducts,
-        currentPage: page,
+        currentPage: parsedPage,
+        totalPages: Math.ceil(totalProducts / parsedLimit), // Calculate total pages
       });
     } else {
-      res.status(500).json({ message: "Failed to get products." });
+      res.status(404).json({ message: "No products found." });
     }
   } catch (error) {
     res.status(500).json({ message: "Internal server error.", error: error });
@@ -179,4 +356,8 @@ module.exports = {
   addNewSaleList,
   getAllSaleLists,
   deleteSale,
+  getProductInfo,
+  updateProduct,
+  getSaleInfo,
+  updateSale,
 };
