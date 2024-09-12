@@ -1,9 +1,10 @@
 const User = require("../model/users.model");
 const jwt = require("jsonwebtoken");
+const config = require("../config/config");
 
 // signing json web token
 const signJsonWebToken = (user, tokenValidationTime) => {
-  const signingInToken = jwt.sign(user, process.env.JWT_SECRET, {
+  const signingInToken = jwt.sign(user, config.jwt_secret_key, {
     expiresIn: tokenValidationTime ? tokenValidationTime : "7d",
   });
 
@@ -15,7 +16,7 @@ const verifyJsonWebToken = (req, res, next) => {
   try {
     const userToken = req?.headers?.authorization?.split(" ")[1];
     if (userToken) {
-      jwt.verify(userToken, process.env.JWT_SECRET, function (err, decode) {
+      jwt.verify(userToken, config.jwt_secret_key, function (err, decode) {
         if (err) {
           return res.status(401).send({ message: "UnAuthorized access" });
         }

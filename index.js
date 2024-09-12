@@ -34,6 +34,6 @@ app.use("*", (req, res) => {
 });
 
 // Start the Express Server
-app.listen(config.app.port, () => {
-  console.log(`Server running at http://localhost:${config.app.port}`);
+app.listen(config.port, () => {
+  console.log(`Server running at http://localhost:${config.port}`);
 });
