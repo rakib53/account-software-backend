@@ -103,53 +103,42 @@ const addNewSale = async (req, res, next) => {
   }
 };
 
-// // Getting all the sales list
-// const getAllSaleLists = async (req, res, next) => {
-//   try {
-//     // Now, populate the product field in the inserted sale list
-//     const result = await SaleListModel.find().populate({
-//       path: "product",
-//       select: "title buyingPrice sellingPrice",
-//     });
-//     if (result) {
-//       res.status(200).json({ saleLists: result });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal server error.", error: error });
-//     next(error);
-//   }
-// };
-
 // Getting all the sales list
 const getAllSaleLists = async (req, res, next) => {
-  const { limit = 10, page = 1 } = req.query;
+  // Destructure limit and page from the query, defaulting to undefined
+  const { limit, page } = req.query;
 
-  // Parse limit and page to ensure they are numbers (since query parameters are strings by default)
-  const parsedLimit = parseInt(limit, 10);
-  const parsedPage = parseInt(page, 10);
+  // Parse limit and page if they are provided, otherwise keep them undefined
+  const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+  const parsedPage = page ? parseInt(page, 10) : undefined;
 
   try {
     // Get total sales count for pagination
     const totalSales = await SaleListModel.countDocuments();
 
-    // Calculate the number of documents to skip for pagination
-    const skip = (parsedPage - 1) * parsedLimit;
+    // If both limit and page are provided, calculate skip and limit for pagination
+    const skip = parsedPage && parsedLimit ? (parsedPage - 1) * parsedLimit : 0;
 
-    // Find the sales list with pagination and populate the product details
-    const result = await SaleListModel.find()
-      .populate({
-        path: "product",
-        select: "title buyingPrice sellingPrice",
-      })
-      .skip(skip)
-      .limit(parsedLimit);
+    // Build the query for finding the sales list
+    let query = SaleListModel.find().populate({
+      path: "product",
+      select: "title buyingPrice sellingPrice",
+    });
+
+    // Apply pagination if limit and page are provided
+    if (parsedLimit && parsedPage) {
+      query = query.skip(skip).limit(parsedLimit);
+    }
+
+    // Execute the query
+    const result = await query;
 
     if (result) {
       res.status(200).json({
         saleLists: result,
         totalSales,
-        currentPage: parsedPage,
-        totalPages: Math.ceil(totalSales / parsedLimit),
+        currentPage: parsedPage || null,
+        totalPages: parsedLimit ? Math.ceil(totalSales / parsedLimit) : null,
       });
     } else {
       res.status(404).json({ message: "No sales lists found." });
@@ -291,30 +280,74 @@ const deleteSale = async (req, res, next) => {
 };
 
 // get all products
-const getProductList = async (req, res, next) => {
-  const { limit = 12, page = 1 } = req.query;
+// const getProductList = async (req, res, next) => {
+//   const { limit = 12, page = 1 } = req.query;
 
-  // Parse limit and page to ensure they are numbers (in case they're passed as strings)
-  const parsedLimit = parseInt(limit, 10);
-  const parsedPage = parseInt(page, 10);
+//   // Parse limit and page to ensure they are numbers (in case they're passed as strings)
+//   const parsedLimit = parseInt(limit, 10);
+//   const parsedPage = parseInt(page, 10);
+
+//   try {
+//     // Get the total number of products
+//     const totalProducts = await Product.countDocuments();
+
+//     // Calculate the number of documents to skip for pagination
+//     const skip = (parsedPage - 1) * parsedLimit;
+
+//     // Find the products with limit and skip for pagination
+//     const productList = await Product.find({}).skip(skip).limit(parsedLimit);
+
+//     // Check if the product list exists and send response
+//     if (productList) {
+//       res.status(200).json({
+//         products: productList,
+//         totalProducts,
+//         currentPage: parsedPage,
+//         totalPages: Math.ceil(totalProducts / parsedLimit), // Calculate total pages
+//       });
+//     } else {
+//       res.status(404).json({ message: "No products found." });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ message: "Internal server error.", error: error });
+//     next(error);
+//   }
+// };
+
+// Get all products
+const getProductList = async (req, res, next) => {
+  // Destructure limit and page from query parameters, defaulting to undefined if not provided
+  const { limit, page } = req.query;
+
+  // Parse limit and page if they are provided, otherwise keep them undefined
+  const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+  const parsedPage = page ? parseInt(page, 10) : undefined;
 
   try {
     // Get the total number of products
     const totalProducts = await Product.countDocuments();
 
-    // Calculate the number of documents to skip for pagination
-    const skip = (parsedPage - 1) * parsedLimit;
+    // Calculate the number of documents to skip for pagination if pagination is applied
+    const skip = parsedPage && parsedLimit ? (parsedPage - 1) * parsedLimit : 0;
 
-    // Find the products with limit and skip for pagination
-    const productList = await Product.find({}).skip(skip).limit(parsedLimit);
+    // Build the query for finding the products
+    let query = Product.find();
+
+    // Apply pagination if limit and page are provided
+    if (parsedLimit && parsedPage) {
+      query = query.skip(skip).limit(parsedLimit);
+    }
+
+    // Execute the query
+    const productList = await query;
 
     // Check if the product list exists and send response
     if (productList) {
       res.status(200).json({
         products: productList,
         totalProducts,
-        currentPage: parsedPage,
-        totalPages: Math.ceil(totalProducts / parsedLimit), // Calculate total pages
+        currentPage: parsedPage || null,
+        totalPages: parsedLimit ? Math.ceil(totalProducts / parsedLimit) : null, // Total pages only if paginated
       });
     } else {
       res.status(404).json({ message: "No products found." });

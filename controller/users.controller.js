@@ -11,31 +11,47 @@ const signJsonWebToken = (user, tokenValidationTime) => {
   return signingInToken;
 };
 
+function getCookieValue(cookie, name) {
+  const match = cookie?.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  if (match) {
+    return match[2];
+  }
+  return null;
+}
+
 // verifying json web token
 const verifyJsonWebToken = (req, res, next) => {
   try {
-    const userToken = req?.headers?.authorization?.split(" ")[1];
-    if (userToken) {
-      jwt.verify(userToken, config.jwt_secret_key, function (err, decode) {
-        if (err) {
-          return res.status(401).send({ message: "UnAuthorized access" });
-        }
-        req.decoded = decode;
-        next();
-      });
-    } else {
-      return res
-        .status(401)
-        .send({ message: "Something went wrong, please login again!" });
+    // Your JWT verification logic here
+    const token = getCookieValue(req.headers.cookie, "account_token");
+
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
     }
-  } catch (error) {
-    next(error);
+
+    jwt.verify(token, config.jwt_secret_key, function (err, decoded) {
+      if (decoded) {
+        req.user = decoded;
+        next();
+      } else if (err) {
+        sendResponse(res, {
+          message: "Unauthorized user detected!",
+          data: {},
+        });
+      }
+    });
+  } catch (err) {
+    sendResponse(res, {
+      message: "Unauthorized user detected!",
+      data: {},
+    });
   }
 };
 
 // Creating a new User.
 const registration = async (req, res, next) => {
   try {
+    console.log(config.node_env);
     const { userName, email, password } = req?.body;
     const date = `${new Date().toDateString().split(" ")[1]} ${
       new Date().toDateString().split(" ")[2]
@@ -90,7 +106,7 @@ const registration = async (req, res, next) => {
 // Login  User
 const loginUser = async (req, res, next) => {
   try {
-    const { email, password: userPass, isRemember } = req.body;
+    const { email, password: userPass } = req.body;
     // Checking if the user already exist
     const isUser = await User.findOne({ email });
 
@@ -109,16 +125,12 @@ const loginUser = async (req, res, next) => {
         country,
         avatar,
       };
-
-      const token = signJsonWebToken(
-        {
-          _id,
-          userName,
-          email,
-          date,
-        },
-        isRemember && "30d"
-      );
+      const token = signJsonWebToken({
+        _id,
+        userName,
+        email,
+        date,
+      });
 
       // sending the response to the fronted
       if (isUser?._id) {
@@ -128,11 +140,18 @@ const loginUser = async (req, res, next) => {
             .json({ status: 403, message: "Password doesn't match!" });
           return;
         } else {
-          res.status(201).json({
-            token: token,
-            user,
-            message: "User logged in successfully",
-          });
+          res
+            .cookie("account_token", token, {
+              expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+              httpOnly: true,
+              secure: true,
+              sameSite: "none",
+            })
+            .status(200)
+            .json({
+              user: user,
+              message: "Logged in successfully",
+            });
         }
       }
     } else {
@@ -143,11 +162,25 @@ const loginUser = async (req, res, next) => {
   }
 };
 
+// logout endpoint
+const logoutUser = (req, res) => {
+  // clearing cookie based on request
+  res.clearCookie("account_token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+  });
+  // Sending response to the client
+  res
+    .status(200)
+    .json({ isLoggedOut: true, message: "Logged out successfully!" });
+};
+
 // Checking The user is valid or not
 const userInfo = async (req, res, next) => {
   try {
     // user email
-    const { email } = req.decoded;
+    const { email } = req.user;
     // Checking if the user already exist
     const isUser = await User.findOne({ email });
     if (isUser?._id) {
@@ -176,4 +209,5 @@ module.exports = {
   registration,
   loginUser,
   userInfo,
+  logoutUser,
 };

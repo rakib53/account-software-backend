@@ -8,6 +8,8 @@ const dev = {
     process.env.SERVER_TYPE === "production"
       ? process.env.REMOTE_DATABASE_URL
       : process.env.LOCAL_DATABASE_URL,
+  remote_database_url: process.env.REMOTE_DATABASE_URL,
+  local_databse_url: process.env.LOCAL_DATABASE_URL,
 };
 
 module.exports = dev;
