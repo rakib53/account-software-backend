@@ -34,24 +34,20 @@ const verifyJsonWebToken = (req, res, next) => {
         req.user = decoded;
         next();
       } else if (err) {
-        sendResponse(res, {
+        res.status(400).json({
           message: "Unauthorized user detected!",
           data: {},
         });
       }
     });
   } catch (err) {
-    sendResponse(res, {
-      message: "Unauthorized user detected!",
-      data: {},
-    });
+    next(err);
   }
 };
 
 // Creating a new User.
 const registration = async (req, res, next) => {
   try {
-    console.log(config.node_env);
     const { userName, email, password } = req?.body;
     const date = `${new Date().toDateString().split(" ")[1]} ${
       new Date().toDateString().split(" ")[2]

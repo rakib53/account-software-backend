@@ -26,7 +26,6 @@ const createProduct = async (req, res, next) => {
       res.status(500).json({ message: "Failed to add product." });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -42,7 +41,6 @@ const getProductInfo = async (req, res, next) => {
       res.status(404).json({ message: "No Product Found.", product: {} });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -73,7 +71,6 @@ const updateProduct = async (req, res, next) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -98,7 +95,6 @@ const addNewSale = async (req, res, next) => {
         .json({ status: 404, message: "Invalid product code.", product: [] });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -144,7 +140,6 @@ const getAllSaleLists = async (req, res, next) => {
       res.status(404).json({ message: "No sales lists found." });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -166,7 +161,6 @@ const getSaleInfo = async (req, res, next) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -195,7 +189,6 @@ const updateSale = async (req, res, next) => {
       }
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -249,7 +242,6 @@ const addNewSaleList = async (req, res, next) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -274,45 +266,9 @@ const deleteSale = async (req, res, next) => {
       });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
-
-// get all products
-// const getProductList = async (req, res, next) => {
-//   const { limit = 12, page = 1 } = req.query;
-
-//   // Parse limit and page to ensure they are numbers (in case they're passed as strings)
-//   const parsedLimit = parseInt(limit, 10);
-//   const parsedPage = parseInt(page, 10);
-
-//   try {
-//     // Get the total number of products
-//     const totalProducts = await Product.countDocuments();
-
-//     // Calculate the number of documents to skip for pagination
-//     const skip = (parsedPage - 1) * parsedLimit;
-
-//     // Find the products with limit and skip for pagination
-//     const productList = await Product.find({}).skip(skip).limit(parsedLimit);
-
-//     // Check if the product list exists and send response
-//     if (productList) {
-//       res.status(200).json({
-//         products: productList,
-//         totalProducts,
-//         currentPage: parsedPage,
-//         totalPages: Math.ceil(totalProducts / parsedLimit), // Calculate total pages
-//       });
-//     } else {
-//       res.status(404).json({ message: "No products found." });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ message: "Internal server error.", error: error });
-//     next(error);
-//   }
-// };
 
 // Get all products
 const getProductList = async (req, res, next) => {
@@ -353,7 +309,6 @@ const getProductList = async (req, res, next) => {
       res.status(404).json({ message: "No products found." });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error.", error: error });
     next(error);
   }
 };
@@ -373,10 +328,6 @@ const deleteProduct = async (req, res, next) => {
       });
     }
   } catch (error) {
-    res.status(500).json({
-      message: "Internal server errors!",
-      error: error,
-    });
     next(error);
   }
 };

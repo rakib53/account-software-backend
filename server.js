@@ -9,13 +9,23 @@ const ProductRouter = require("./routes/product.router");
 
 // Middlewares
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      const whitelist = [
+        "http://localhost:5173",
+        "https://fashionable-outfits.com",
+      ];
+      if (whitelist.indexOf(origin) !== -1 || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
   })
 );
-app.use(cookieParser());
 
 // User API
 app.use("/api/v1/users", UserRouter);
