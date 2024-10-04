@@ -102,12 +102,17 @@ const addNewSale = async (req, res, next) => {
 // Getting all the sales list
 const getAllSaleLists = async (req, res, next) => {
   // Destructure limit and page from the query, defaulting to undefined
-  const { limit, page } = req.query;
+  const { search = "", limit, page } = req.query;
 
   // Parse limit and page if they are provided, otherwise keep them undefined
   const parsedLimit = limit ? parseInt(limit, 10) : undefined;
   const parsedPage = page ? parseInt(page, 10) : undefined;
-
+  let searchPhoneQuery = {};
+  if (search) {
+    searchPhoneQuery = { phone: search };
+  } else {
+    searchPhoneQuery = {};
+  }
   try {
     // Get total sales count for pagination
     const totalSales = await SaleListModel.countDocuments();
@@ -116,7 +121,7 @@ const getAllSaleLists = async (req, res, next) => {
     const skip = parsedPage && parsedLimit ? (parsedPage - 1) * parsedLimit : 0;
 
     // Build the query for finding the sales list
-    let query = SaleListModel.find().populate({
+    let query = SaleListModel.find(searchPhoneQuery).populate({
       path: "product",
       select: "title buyingPrice sellingPrice",
     });
@@ -201,6 +206,7 @@ const addNewSaleList = async (req, res, next) => {
       product: sale?.id,
       code: sale?.code,
       title: sale?.title,
+      phone: sale?.phone,
       buyingPrice: sale?.buyingPrice,
       sellingPrice: sale?.sellingPrice,
       discount: sale?.discount,

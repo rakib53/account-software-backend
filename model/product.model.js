@@ -62,6 +62,11 @@ const SaleListSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    phone: {
+      type: String,
+      required: true,
+      default: "N/A",
+    },
     buyingPrice: {
       type: Number,
       required: true,
