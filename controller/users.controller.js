@@ -48,7 +48,7 @@ const verifyJsonWebToken = (req, res, next) => {
 // Creating a new User.
 const registration = async (req, res, next) => {
   try {
-    const { userName, email, password } = req?.body;
+    const { userName, email, password, phone, role } = req?.body;
     const date = `${new Date().toDateString().split(" ")[1]} ${
       new Date().toDateString().split(" ")[2]
     } ${new Date().toLocaleString().split(" ")[1].split(":")[0]}:${
@@ -57,12 +57,11 @@ const registration = async (req, res, next) => {
       new Date().toDateString().split(" ")[3]
     }`;
 
-    // User initial Role for account
-    const role = "admin";
     // User info to be send in fronted
     const user = {
       userName,
       password,
+      phone,
       email,
       date,
       role,

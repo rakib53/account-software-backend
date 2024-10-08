@@ -9,12 +9,10 @@ const User = mongoose.Schema({
   phone: {
     type: Number,
     require: false,
-    default: "",
   },
   email: {
     type: String,
     require: true,
-    default: "",
   },
   password: {
     type: String,
@@ -24,12 +22,11 @@ const User = mongoose.Schema({
   gender: {
     type: String,
     require: false,
-    default: "",
   },
   role: {
     type: String,
-    enum: ["user", "admin"],
-    default: "admin",
+    enum: ["editor", "admin", "viewer"],
+    default: "viewer",
   },
   date: {
     type: String,
